@@ -1,12 +1,17 @@
 package com.minanet.trulioo.kyc.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
 import com.trulioo.normalizedapi.ApiClient;
 import com.trulioo.normalizedapi.ApiException;
 import com.trulioo.normalizedapi.api.ConfigurationApi;
@@ -23,6 +28,7 @@ public class KYCController {
 	@Value("${trulioo.apiclient.password}")
 	public String truliooPassword;
 	
+	@CrossOrigin
 	@GetMapping("/testTruliooConnection")
 	public String testTruliooConnection() throws ApiException {
 		ApiClient apiClient = new ApiClient();
@@ -30,6 +36,7 @@ public class KYCController {
 		return connectionClient.sayHello("Joe Napoli");
 	}
 	
+	@CrossOrigin
 	@GetMapping("/testTruliooAuthentication")
 	public String testTruliooAuthentication() throws ApiException {
 		ApiClient apiClient = new ApiClient();
@@ -42,8 +49,9 @@ public class KYCController {
 		return connectionClient.testAuthentication();
 	}
 	
+	@CrossOrigin
 	@GetMapping("/getCountryCodes")
-	public List<String> getCountryCodes() throws ApiException {
+	public Map<String, String> getCountryCodes() throws ApiException {
 		ApiClient apiClient = new ApiClient();
 		apiClient.setUsername(truliooUsername);
 		apiClient.setPassword(truliooPassword);
@@ -53,9 +61,15 @@ public class KYCController {
 		List<String> countryCodes = configurationClient.getCountryCodes("Identity Verification");
 		logger.info("\n---------------Country code Response------------");
 		logger.info("{}",countryCodes);
-		return countryCodes;
+		
+		Map<String, String> countryList = new HashMap<>();
+		countryCodes.forEach(countryCode -> {
+		    countryList.put(CountryCodesEnum.valueOf(countryCode).getCountryCode(), CountryCodesEnum.valueOf(countryCode).getCountryName());
+		});
+		return countryList;
 	}
 	
+	@CrossOrigin
 	@GetMapping("/getRecommendedfields")
 	public Object  getRecommendedfields(@RequestParam String countryCode) throws ApiException{
 		
