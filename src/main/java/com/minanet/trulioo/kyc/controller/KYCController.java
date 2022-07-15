@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -29,7 +30,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
+
 import com.trulioo.normalizedapi.ApiCallback;
 import com.trulioo.normalizedapi.ApiClient;
 import com.trulioo.normalizedapi.ApiException;
@@ -153,12 +156,14 @@ public class KYCController {
 	@CrossOrigin	
 	@PostMapping(value = "/verifyKYCService", 		        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE})
-	public String verifyKYCService(final HttpServletRequest httpRequest
+	public Integer verifyKYCService(final HttpServletRequest httpRequest, HttpServletResponse response
 			) throws IOException, ApiException {
+		
 		
 		ApiClient apiClient = new ApiClient();
 		apiClient.setUsername(truliooUsername);
 		apiClient.setPassword(truliooPassword);
+		VerificationsApi verificationClient = new VerificationsApi(apiClient);
 
         String clientRequest = httpRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
         JSONObject clientRequestJson = new JSONObject(clientRequest); 
@@ -185,12 +190,6 @@ public class KYCController {
 		logger.info("\n---------------Verify KYC Service Request------------");
 		logger.info("{}",request);
 		
-		//VerificationsApi
-        VerificationsApi verificationClient = new VerificationsApi(apiClient);
-		VerifyResult result = verificationClient.verify(request);
-		logger.info("\n---------------Verify KYC Service Response------------");
-		logger.info("{}",result);
-        
 		//asyn call
         verificationClient.verifyAsync(request, new ApiCallback<VerifyResult>() {
            @Override
@@ -198,9 +197,10 @@ public class KYCController {
         	   Logger.getLogger(KYCController.class.getName()).log(Level.SEVERE, null, e);
            }
            @Override
-           public void onSuccess(VerifyResult result2, int statusCode, Map<String, List<String>> responseHeaders) {
-                System.out.println("response from trulioo  -----"+result2.toString()); //To change body of generated methods, choose Tools | Templates.
-        	}
+           public void onSuccess(VerifyResult response, int statusCode, Map<String, List<String>> responseHeaders) {
+                logger.info("\n---------------Verify KYC Service Response------------");
+        		logger.info("{}",response);
+           }
            @Override
            public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
         	   
@@ -210,9 +210,8 @@ public class KYCController {
         	   
            }
        });
-	
-       return result.toString();
-	}
+       return response.getStatus();
+	}	
 	
 	public static Map<String, String> sortByValue(Map<String, String> hm) {
         // Create a list from elements of HashMap
