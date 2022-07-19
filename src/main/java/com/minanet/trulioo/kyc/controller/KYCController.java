@@ -305,8 +305,8 @@ public class KYCController {
 	}
 	
 	@CrossOrigin
-	@GetMapping("/getEmbedIDToken")
-	public String getEmbedIDToken() {
+	@GetMapping("/getEmbedIdToken")
+	public String getEmbedIdToken() {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.add("cache-control", "no-cache");
