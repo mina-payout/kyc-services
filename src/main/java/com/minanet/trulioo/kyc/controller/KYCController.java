@@ -128,15 +128,16 @@ public class KYCController {
 	        personInfo.getAsJsonObject("properties").add("DateOfBirth", dob);
 
 	        JsonArray req = personInfo.getAsJsonArray("required");
+	        JsonArray finalList = new JsonArray();
 	        for (int i = 0; i < req.size(); i++) {
-
-	            if ("DayOfBirth".equals(req.get(i).getAsString()) || "MonthOfBirth".equals(req.get(i).getAsString())
-	                    || "YearOfBirth".equals(req.get(i).getAsString())) {
-	                logger.info("{}", req.get(i));
-	                req.remove(i);
+	            if ( !("DayOfBirth".equals(req.get(i).getAsString()) || "MonthOfBirth".equals(req.get(i).getAsString())
+	                    || "YearOfBirth".equals(req.get(i).getAsString()))) {
+	                finalList.add(req.get(i));
 	            }
 	        }
-	        req.add("DateOfBirth");
+	        finalList.add("DateOfBirth");
+	        personInfo.remove("required");
+	        personInfo.add("required", finalList);
 
 	        JsonObject location = jsonObject.getAsJsonObject("properties").getAsJsonObject("Location");
 	        JsonObject comms = jsonObject.getAsJsonObject("properties").getAsJsonObject("Communication");
