@@ -18,6 +18,8 @@ dependencies {
 	implementation 'com.trulioo:normalizedapi:1.+'
 	implementation 'joda-time:joda-time:2.10.13'
 	implementation 'org.json:json:20211205'
+	
+	implementation 'org.apache.httpcomponents:httpclient:4.5'
 }
 
 tasks.named('test') {

@@ -18,13 +18,20 @@ import javax.servlet.http.HttpServletResponse;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -32,7 +39,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.minanet.trulioo.core.domain.TruliooResponse;
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
-import com.minanet.trulioo.kyc.exception.TruliooException;
 import com.trulioo.normalizedapi.ApiCallback;
 import com.trulioo.normalizedapi.ApiClient;
 import com.trulioo.normalizedapi.ApiException;
@@ -48,11 +54,23 @@ public class KYCController {
 	
 	public static final org.slf4j.Logger logger =LoggerFactory.getLogger(KYCController.class);
 	
+	@Autowired
+	RestTemplate restTemplate;
+	
 	@Value("${trulioo.apiclient.username}")
 	public String truliooUsername;
 	
 	@Value("${trulioo.apiclient.password}")
 	public String truliooPassword;
+
+	@Value("${trulioo.embedid.token.uri}")
+	public String truliooEmbedIdTokenUri;
+	
+	@Value("${trulioo.embedid.key.fe}")
+	public String truliooEmbedIdKeyFe;
+	
+	@Value("${trulioo.embedid.key.api}")
+	public String truliooEmbedIdKeyBe;
 	
 	VerifyResult response;
 	
@@ -284,5 +302,23 @@ public class KYCController {
 		truliooResponse.setTruliooResponse(response);
 		
 		return truliooResponse;
+	}
+	
+	@CrossOrigin
+	@GetMapping("/getEmbedIDToken")
+	public String getEmbedIDToken() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+		headers.add("cache-control", "no-cache");
+		headers.add("content-type", "application/json");
+		headers.add("x-trulioo-api-key", truliooEmbedIdKeyBe);
+		
+		Map<String, Object> map = new HashMap<>();
+		map.put("publicKey", truliooEmbedIdKeyFe);
+		
+		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(map, headers);
+		ResponseEntity<String> response = restTemplate.exchange(truliooEmbedIdTokenUri, HttpMethod.POST, entity, String.class);
+
+		return response.getBody();
 	}
 }
