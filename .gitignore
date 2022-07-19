@@ -17,6 +17,7 @@ bin/
 logs/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
+*.json
 
 ### IntelliJ IDEA ###
 .idea

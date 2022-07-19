@@ -18,6 +18,9 @@ dependencies {
 	implementation 'com.trulioo:normalizedapi:1.+'
 	implementation 'joda-time:joda-time:2.10.13'
 	implementation 'org.json:json:20211205'
+	implementation 'com.google.api-client:google-api-client:1.33.0'
+    implementation 'com.google.oauth-client:google-oauth-client-jetty:1.32.1'
+    implementation 'com.google.apis:google-api-services-sheets:v4-rev20210629-1.32.1'
 }
 
 tasks.named('test') {
