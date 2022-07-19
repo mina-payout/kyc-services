@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.websocket.server.PathParam;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,6 +28,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -305,8 +307,8 @@ public class KYCController {
 	}
 	
 	@CrossOrigin
-	@GetMapping("/getEmbedIdToken")
-	public String getEmbedIdToken() {
+	@PostMapping("/trulioo-api/embedids/tokens/{publicKey}")
+	public String getEmbedIdToken(@PathVariable  String publicKey) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.add("cache-control", "no-cache");
@@ -314,7 +316,7 @@ public class KYCController {
 		headers.add("x-trulioo-api-key", truliooEmbedIdKeyBe);
 		
 		Map<String, Object> map = new HashMap<>();
-		map.put("publicKey", truliooEmbedIdKeyFe);
+		map.put("publicKey", publicKey);
 		
 		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(map, headers);
 		ResponseEntity<String> response = restTemplate.exchange(truliooEmbedIdTokenUri, HttpMethod.POST, entity, String.class);
