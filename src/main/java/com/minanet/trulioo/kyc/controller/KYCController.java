@@ -30,12 +30,13 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
+import com.minanet.trulioo.core.domain.TruliooResponse;
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
-
+import com.minanet.trulioo.kyc.exception.TruliooException;
 import com.trulioo.normalizedapi.ApiCallback;
 import com.trulioo.normalizedapi.ApiClient;
 import com.trulioo.normalizedapi.ApiException;
+import com.trulioo.normalizedapi.ApiResponse;
 import com.trulioo.normalizedapi.api.ConfigurationApi;
 import com.trulioo.normalizedapi.api.ConnectionApi;
 import com.trulioo.normalizedapi.api.VerificationsApi;
@@ -79,6 +80,7 @@ public class KYCController {
 	@CrossOrigin
 	@GetMapping("/getCountryCodes")
 	public Map<String, String> getCountryCodes() throws ApiException {
+		HttpServletResponse response;
 		ApiClient apiClient = new ApiClient();
 		apiClient.setUsername(truliooUsername);
 		apiClient.setPassword(truliooPassword);
@@ -99,8 +101,8 @@ public class KYCController {
 	@CrossOrigin
 	@GetMapping("/getRecommendedfields")
 	public Object getRecommendedfields(@RequestParam String countryCode) throws ApiException{
-		
-		 ApiClient apiClient = new ApiClient();
+			
+		ApiClient apiClient = new ApiClient();
 	        apiClient.setUsername(truliooUsername);
 	        apiClient.setPassword(truliooPassword);
 	        ConfigurationApi configurationClient = new ConfigurationApi(apiClient);
@@ -200,6 +202,7 @@ public class KYCController {
            public void onSuccess(VerifyResult response, int statusCode, Map<String, List<String>> responseHeaders) {
                 logger.info("\n---------------Verify KYC Service Response------------");
         		logger.info("{}",response);
+        		kycResponse(response.toString());
            }
            @Override
            public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
@@ -210,9 +213,16 @@ public class KYCController {
         	   
            }
        });
+       
        return response.getStatus();
 	}	
 	
+	public String kycResponse(String response) { // get asyn call response POC
+		System.out.println("************"+response);
+		return response;
+	}
+	
+	//Common method
 	public static Map<String, String> sortByValue(Map<String, String> hm) {
         // Create a list from elements of HashMap
         List<Map.Entry<String, String>> list = new LinkedList<Map.Entry<String, String>>(hm.entrySet());
@@ -231,4 +241,47 @@ public class KYCController {
         }
         return temp;
     }
+	
+	//getRecommendedfields POC for error handling
+	@CrossOrigin
+	@GetMapping("/getRecommendedfieldsPOC")
+	public Object getRecommendedfieldsPOC(@RequestParam String countryCode) throws ApiException{
+		
+		TruliooResponse truliooResponse = new TruliooResponse();
+		
+		if (countryCode == null || countryCode.isEmpty()) {
+			try {
+				throw new ApiException("Missing the required parameter 'countryCode' when calling getRecommendedfields()");
+			} catch (Exception e) {
+				return truliooResponse;
+			}
+            
+        }
+		 
+		ApiClient apiClient = new ApiClient();
+		apiClient.setUsername(truliooUsername);
+		apiClient.setPassword(truliooPassword);
+		ConfigurationApi configurationClient = new ConfigurationApi(apiClient);
+		try {
+			ApiResponse<Object> response = configurationClient.getRecommendedFieldsWithHttpInfo(countryCode, "Identity Verification");
+			logger.info("\n---------------Recommended Fields Response------------");
+			logger.info("{}",response.getData());
+			System.out.println("getHeaders"+response.getHeaders());
+			truliooResponse = handleTruliooResponse(response.getStatusCode(), "Pass", response.getData());
+		} catch (ApiException e) {
+			truliooResponse = handleTruliooResponse(e.getCode(), e.getResponseBody(), "The user name and password you provided is not valid or you are using an account not configured to be an API user.");
+		}
+		 
+		return truliooResponse;
+	}
+	
+	//POC
+	private TruliooResponse handleTruliooResponse(Integer httpStatus, String truliooStatus, Object response) {
+		TruliooResponse truliooResponse = new TruliooResponse();
+		truliooResponse.setHttpStatus(httpStatus);
+		truliooResponse.setTruliooStatus(truliooStatus);
+		truliooResponse.setTruliooResponse(response);
+		
+		return truliooResponse;
+	}
 }
