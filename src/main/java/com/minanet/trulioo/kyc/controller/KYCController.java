@@ -6,7 +6,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,7 +19,6 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.websocket.server.PathParam;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -54,12 +52,9 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.sheets.v4.Sheets;
-import com.google.api.services.sheets.v4.Sheets.Spreadsheets.Values;
 import com.google.api.services.sheets.v4.SheetsScopes;
-import com.google.api.services.sheets.v4.model.AppendValuesResponse;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
-import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -69,8 +64,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.minanet.trulioo.core.domain.TruliooResponse;
+import com.minanet.trulioo.kyc.config.GoogleSheetAuthorizationConfig;
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
-import com.minanet.trulioo.tools.GoogleSheetAuthorizationConfig;
+import com.minanet.trulioo.kyc.service.GoogleSheetsService;
 import com.trulioo.normalizedapi.ApiCallback;
 import com.trulioo.normalizedapi.ApiClient;
 import com.trulioo.normalizedapi.ApiException;
@@ -88,14 +84,17 @@ public class KYCController {
 
 	private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-    private static final String TOKENS_DIRECTORY_PATH = "tokens";
+    private static final String TOKENS_DIRECTORY_PATH = "resources";
 
     private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE);
-    private static final String CREDENTIALS_FILE_PATH = "/googleSheetCredentials.json";
+    private static final String CREDENTIALS_FILE_PATH = "resources/googleSheetCredentials.json";
     
 	
 	@Autowired
 	RestTemplate restTemplate;
+	
+	@Autowired
+	GoogleSheetsService sheetsService;
 	
 	@Value("${trulioo.apiclient.username}")
 	public String truliooUsername;
@@ -111,6 +110,11 @@ public class KYCController {
 	
 	@Value("${trulioo.embedid.key.api}")
 	public String truliooEmbedIdKeyBe;
+	
+	@Value("${credentials.file.path}")
+    private String credentialsFilePath;
+    @Value("${tokens.directory.path}")
+    private String tokensDirectoryPath;
 	
 	VerifyResult response;
 	
@@ -381,6 +385,14 @@ public class KYCController {
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
     
+	@CrossOrigin
+	@GetMapping("/googleSheetPOC2")
+	public String googleSheetPOC2() throws GeneralSecurityException, IOException {
+		sheetsService.appendRow();
+		return "Done";
+	}
+	
+	
 	
 	@CrossOrigin
 	@GetMapping("/googleSheetPOC")
