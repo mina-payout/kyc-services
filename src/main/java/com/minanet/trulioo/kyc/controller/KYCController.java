@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,7 +21,6 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.websocket.server.PathParam;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -34,7 +34,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,10 +44,12 @@ import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInsta
 import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
 import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.googleapis.json.GoogleJsonError;
 import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -57,8 +58,12 @@ import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.Sheets.Spreadsheets.Values;
 import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.api.services.sheets.v4.model.AppendValuesResponse;
+import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
 import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
+import com.google.api.services.sheets.v4.model.DimensionRange;
+import com.google.api.services.sheets.v4.model.InsertDimensionRequest;
+import com.google.api.services.sheets.v4.model.Request;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
 import com.google.auth.http.HttpCredentialsAdapter;
@@ -81,6 +86,9 @@ import com.trulioo.normalizedapi.api.VerificationsApi;
 import com.trulioo.normalizedapi.model.VerifyRequest;
 import com.trulioo.normalizedapi.model.VerifyResult;
 
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+
 @RestController
 public class KYCController {
 	
@@ -90,7 +98,7 @@ public class KYCController {
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
 
-    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE);
+    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE_FILE);
     private static final String CREDENTIALS_FILE_PATH = "/googleSheetCredentials.json";
     
 	
@@ -345,8 +353,8 @@ public class KYCController {
 	}
 	
 	@CrossOrigin
-	@PostMapping("/trulioo-api/embedids/tokens/{publicKey}")
-	public String getEmbedIdToken(@PathVariable  String publicKey) {
+	@GetMapping("/getEmbedIdToken")
+	public String getEmbedIdToken() {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.add("cache-control", "no-cache");
@@ -354,7 +362,7 @@ public class KYCController {
 		headers.add("x-trulioo-api-key", truliooEmbedIdKeyBe);
 		
 		Map<String, Object> map = new HashMap<>();
-		map.put("publicKey", publicKey);
+		map.put("publicKey", truliooEmbedIdKeyFe);
 		
 		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(map, headers);
 		ResponseEntity<String> response = restTemplate.exchange(truliooEmbedIdTokenUri, HttpMethod.POST, entity, String.class);
@@ -386,8 +394,8 @@ public class KYCController {
 	@GetMapping("/googleSheetPOC")
 	public String googleSheetPOC() throws GeneralSecurityException, IOException {
 		 final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-	     final String spreadsheetId = "";
-	     final String range = "A2:E10";
+	     final String spreadsheetId = "1TUWlGlZStYoIYzK0--5zj0dArRt4Fo5eVwPuLCoVXIY";
+	     final String range = "A2:B5";
 	     Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
 	             .setApplicationName(APPLICATION_NAME)
 	             .build();
@@ -401,81 +409,98 @@ public class KYCController {
 	         System.out.println("Name, Major");
 	         for (List row : values) {
 	             // Print columns A and E, which correspond to indices 0 and 4.
-	             System.out.printf("%s, %s\n", row.get(0), row.get(4));
+	             System.out.printf("%s, %s\n", row.get(0), row.get(1));
 	         }
 	     }
-	     
-	/*     final String range2 = "G2";
-	   
-	     ValueRange requestBody = new ValueRange();
-	    		*/
-	     
-	   /*  final List<String> SCOPES =
-	             Arrays.asList(SheetsScopes.SPREADSHEETS,SheetsScopes.DRIVE);
-	     
-	     final java.io.File DATA_STORE_DIR = new java.io.File(
-	    	        System.getProperty("user.home"), ".googleSheetCredentials/2/sheets.googleapis.com-java-quickstart.json");
-	   */
-	     
-	    	/*	 ValueRange body = new ValueRange()
-	    	      .setValues(Arrays.asList(
-	    	        Arrays.asList("Expenses January"), 
-	    	        Arrays.asList("books", "30"), 
-	    	        Arrays.asList("pens", "10"),
-	    	        Arrays.asList("Expenses February"), 
-	    	        Arrays.asList("clothes", "20"),
-	    	        Arrays.asList("shoes", "5")));
-	    	    UpdateValuesResponse result = service.spreadsheets().values()
-	    	      .update(spreadsheetId, "A1", body)
-	    	      .setValueInputOption("RAW")
-	    	      .execute();		 
-	    	*/	 
-	/*     Sheets.Spreadsheets.Values.Update request =
-	    		 service.spreadsheets().values().update(spreadsheetId, range2, requestBody);
-	    	    request.setValueInputOption("truliooData");
-
-	    	    UpdateValuesResponse response1 = request.execute();
-
-	    	    System.out.println(response1);*/
-	     
-	     // New code for add data
-	     GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
-	                .createScoped(Collections.singleton(SheetsScopes.SPREADSHEETS));
-	        HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(
-	                credentials);
-
-	        // Create the sheets API client
-	        Sheets service1 = new Sheets.Builder(new NetHttpTransport(),
-	                GsonFactory.getDefaultInstance(),
-	                requestInitializer)
-	                .setApplicationName("Sheets samples")
-	                .build();
-
-	        List<ValueRange> data = new ArrayList<>();
-	        data.add(new ValueRange()
-	                .setRange(range)
-	                .setValues(values));
-
-	        BatchUpdateValuesResponse result = null;
-	        try {
-	            // Updates the values in the specified range.
-	            BatchUpdateValuesRequest body = new BatchUpdateValuesRequest()
-	                    .setValueInputOption("Trulioo Updated data")
-	                    .setData(data);
-	            result = service1.spreadsheets().values().batchUpdate(spreadsheetId, body).execute();
-	            System.out.printf("%d cells updated.", result.getTotalUpdatedCells());
-	        } catch (GoogleJsonResponseException e) {
-	            // TODO(developer) - handle error appropriately
-	            GoogleJsonError error = e.getDetails();
-	            if (error.getCode() == 404) {
-	                System.out.printf("Spreadsheet not found with id '%s'.\n",spreadsheetId);
-	            } else {
-	                throw e;
-	            }
-	        }
+	
+			/*
+			 * List<ValueRange> data = new ArrayList<>(); data.add(new ValueRange()
+			 * .setRange(range) .setValues(values));
+			 * 
+			 * BatchUpdateValuesResponse result = null; BatchUpdateValuesRequest body = new
+			 * BatchUpdateValuesRequest() .setValueInputOption("Trulioo Updated data")
+			 * .setData(data); result =
+			 * service.spreadsheets().values().batchUpdate(spreadsheetId, body).execute();
+			 * System.out.printf("%d cells updated.", result.getTotalUpdatedCells());
+			 */
+	        
 	     
 		return "Done"; 
 	}
 	
+	@CrossOrigin
+	@GetMapping("/googleSheetWritePOC")
+	public String appendValues() throws IOException, GeneralSecurityException {
+		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+		String spreadsheetId = "1U0OJz58tbLgpt7O-642iunG9Cpz5yr7tUP_fL304ZUc";
+		String range = "A1:C2";
+		String valueInputOption = "USER_ENTERED";
+		
+		 List<Object> ls=new ArrayList<>();
+	        ls.add(1);
+	        ls.add(2);
+	        List<Object> ls1=new ArrayList<>();
+	        ls1.add(3);
+	        ls1.add(4);
+	        List<List<Object>> ls2=new ArrayList<>();
+	        ls2.add(ls);
+	        ls2.add(ls1);
+		
+	/*	GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
+				.createScoped(Collections.singleton(SheetsScopes.SPREADSHEETS));
+		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
+
+		Sheets service = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(),
+				requestInitializer).setApplicationName("Sheets samples").build();
+*/
+		UpdateValuesResponse result = null;
+		
+			
+		/*
+		 * Sheets service2 = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY,
+		 * getCredentials(HTTP_TRANSPORT)) .setApplicationName(APPLICATION_NAME)
+		 * .build();
+		 */
+		/* ValueRange response = service2.spreadsheets().values()
+	             .get(spreadsheetId, range)
+	             .execute();
+		 
+			ValueRange body = new ValueRange().setValues(ls2);
+			result = service2.spreadsheets().values().update(spreadsheetId, range, body)
+					.setValueInputOption(valueInputOption).execute();
+			
+			System.out.printf("%d cells appended.", result.getUpdatedColumns());
+		*/
+		ValueRange requestBody2 = new ValueRange();
+		
+		Sheets sheetsService = createSheetsService();
+	    Sheets.Spreadsheets.Values.Update request =
+	        sheetsService.spreadsheets().values().update(spreadsheetId, range, requestBody2);
+	    request.setValueInputOption(valueInputOption);
+
+	    UpdateValuesResponse response = request.execute();
+
+	    // TODO: Change code below to process the `response` object:
+	    System.out.println(response);
+		return "Done";
+	}
+	
+	 public static Sheets createSheetsService() throws IOException, GeneralSecurityException {
+		    HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+		    JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+
+		    // TODO: Change placeholder below to generate authentication credentials. See
+		    // https://developers.google.com/sheets/quickstart/java#step_3_set_up_the_sample
+		    //
+		    // Authorize using one of the following scopes:
+		    //   "https://www.googleapis.com/auth/drive"
+		    //   "https://www.googleapis.com/auth/drive.file"
+		    //   "https://www.googleapis.com/auth/spreadsheets"
+		    GoogleCredential credential = null;
+
+		    return new Sheets.Builder(httpTransport, jsonFactory, credential)
+		        .setApplicationName("Google-SheetsSample/0.1")
+		        .build();
+		  }  
 	
 }

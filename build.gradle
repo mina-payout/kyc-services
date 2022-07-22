@@ -24,6 +24,10 @@ dependencies {
 	implementation 'org.apache.httpcomponents:httpclient:4.5'
 	// https://mvnrepository.com/artifact/com.google.auth/google-auth-library-oauth2-http
 implementation 'com.google.auth:google-auth-library-oauth2-http:1.7.0'
+// https://mvnrepository.com/artifact/com.google.api-client/google-api-client-jackson2
+implementation 'com.google.api-client:google-api-client-jackson2:1.20.0'
+
+
 	
 }
 
