@@ -1,4 +1,4 @@
-package com.minanet.trulioo.tools;
+package com.minanet.trulioo.kyc.config;
 
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.springframework.beans.factory.annotation.Autowired;

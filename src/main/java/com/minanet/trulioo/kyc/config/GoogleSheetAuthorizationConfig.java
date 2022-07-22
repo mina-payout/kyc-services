@@ -1,4 +1,4 @@
-package com.minanet.trulioo.tools;
+package com.minanet.trulioo.kyc.config;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
