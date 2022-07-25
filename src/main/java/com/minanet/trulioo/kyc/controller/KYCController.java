@@ -1,13 +1,8 @@
 package com.minanet.trulioo.kyc.controller;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -37,49 +32,16 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.google.api.client.auth.oauth2.Credential;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.googleapis.json.GoogleJsonError;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
-import com.google.api.services.sheets.v4.Sheets;
-import com.google.api.services.sheets.v4.SheetsScopes;
-import com.google.api.services.sheets.v4.model.AppendValuesResponse;
-import com.google.api.services.sheets.v4.model.BatchUpdateSpreadsheetRequest;
-import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
-import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
-import com.google.api.services.sheets.v4.model.DimensionRange;
-import com.google.api.services.sheets.v4.model.InsertDimensionRequest;
-import com.google.api.services.sheets.v4.model.Request;
-import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
-import com.google.api.services.sheets.v4.model.BatchUpdateValuesRequest;
-import com.google.api.services.sheets.v4.model.BatchUpdateValuesResponse;
-import com.google.api.services.sheets.v4.model.ValueRange;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.minanet.trulioo.core.domain.TruliooResponse;
-import com.minanet.trulioo.kyc.config.GoogleAuthorizationConfig;
-import com.minanet.trulioo.kyc.config.GoogleSheetAuthorizationConfig;
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
 import com.minanet.trulioo.kyc.service.GoogleSheetsService;
 import com.trulioo.normalizedapi.ApiCallback;
@@ -89,11 +51,10 @@ import com.trulioo.normalizedapi.ApiResponse;
 import com.trulioo.normalizedapi.api.ConfigurationApi;
 import com.trulioo.normalizedapi.api.ConnectionApi;
 import com.trulioo.normalizedapi.api.VerificationsApi;
+import com.trulioo.normalizedapi.model.TransactionRecordResult;
+import com.trulioo.normalizedapi.model.TransactionStatus;
 import com.trulioo.normalizedapi.model.VerifyRequest;
 import com.trulioo.normalizedapi.model.VerifyResult;
-
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
 
 @RestController
 public class KYCController {
@@ -256,91 +217,85 @@ public class KYCController {
 	public Integer verifyKYCService(final HttpServletRequest httpRequest, HttpServletResponse response
 			) throws IOException, ApiException {
 		
-		
-		ApiClient apiClient = new ApiClient();
-		apiClient.setUsername(truliooUsername);
-		apiClient.setPassword(truliooPassword);
-		VerificationsApi verificationClient = new VerificationsApi(apiClient);
-
-        String clientRequest = httpRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-        JSONObject clientRequestJson = new JSONObject(clientRequest); 
-        
-        
-        UUID uuid = UUID.randomUUID();
-        
-        //String callBackURL = "http://localhost:5000/KYCService/verifyCallbackURL?uuid="+uuid;
-        String callBackURL = "http://minakycservicedev-env.eba-zmicm36h.us-east-1.elasticbeanstalk.com/KYCService/verifyCallbackURL?uuid="+uuid;
-        
-        JSONObject jsonObj = new JSONObject();
-        jsonObj.put("AcceptTruliooTermsAndConditions", "true");
-        jsonObj.put("CleansedAddress", "false");
-        jsonObj.put("ConfigurationName", "Identity Verification");
-        jsonObj.put("CallBackUrl", callBackURL);
-        
-        JSONArray consentForDataSources = new JSONArray();
-        consentForDataSources.put("Birth Registry");
-        consentForDataSources.put("Visa Verification");
-        consentForDataSources.put("DVS ImmiCard Search");
-        consentForDataSources.put("DVS Citizenship Certificate Search");
-        consentForDataSources.put("Credit Agency");
-        
-        jsonObj.put("ConsentForDataSources", consentForDataSources);
-        jsonObj.put("CountryCode", clientRequestJson.get("CountryCode"));
-        jsonObj.put("DataFields", clientRequestJson.get("DataFields"));
-        
-		Gson gson = new GsonBuilder().setPrettyPrinting().create(); 
-		VerifyRequest request = gson.fromJson(jsonObj.toString(), VerifyRequest.class);
-		 
-		logger.info("\n---------------Verify KYC Service Request------------");
-		logger.info("{}",request);
-		/*
-		 * VerifyResult result = verificationClient.verify(request);
-		 * logger.info("\n---------------Verify KYC Service Response 2------------");
-		 * logger.info("{}",result);
-		 */
-		
-		//asyn call
-        verificationClient.verifyAsync(request, new ApiCallback<VerifyResult>() {
-        	@Override
-           public void onFailure(ApiException e, int statusCode, Map<String, List<String>> responseHeaders) {
-        	   Logger.getLogger(KYCController.class.getName()).log(Level.SEVERE, null, e);
-           }
-           @Override
-           public void onSuccess(VerifyResult response, int statusCode, Map<String, List<String>> responseHeaders) {
-                logger.info("\n---------------Verify KYC Service Response------------");
-        		logger.info("{}",response);
-        		
-        		ArrayList<String> list = new ArrayList<String>();
-        		list.add(response.getCountryCode());
-        		list.add(response.getTransactionID());
-        		list.add(response.getUploadedDt().toString());  
-        		
-        		try {
-					sheetsService.addRow(list);
-				} catch (IOException | GeneralSecurityException e) {
-					e.printStackTrace();
-				}
-        		
-        		kycResponse(response.toString());
-           }
-           @Override
-           public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
-        	   logger.info("\n--------------- Testing 2 ------------");
-        	   logger.info("{} {} {}",bytesWritten,contentLength,done);
-           }
-           @Override
-           public void onDownloadProgress(long bytesRead, long contentLength, boolean done) {
-        	   logger.info("\n--------------- Testing 3 ------------");
-           }
-       });
-       
+		try {
+			ApiClient apiClient = new ApiClient();
+			apiClient.setUsername(truliooUsername);
+			apiClient.setPassword(truliooPassword);
+			VerificationsApi verificationClient = new VerificationsApi(apiClient);
+	
+	        String clientRequest = httpRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+	        JSONObject clientRequestJson = new JSONObject(clientRequest); 
+	        
+	        UUID uuid = UUID.randomUUID();
+	        String callBackURL = "http://minakycservicedev-env.eba-zmicm36h.us-east-1.elasticbeanstalk.com/KYCService/verifyCallbackURL";
+	        
+	        JSONObject jsonObj = new JSONObject();
+	        jsonObj.put("AcceptTruliooTermsAndConditions", "true");
+	        jsonObj.put("CleansedAddress", "false");
+	        jsonObj.put("ConfigurationName", "Identity Verification");
+	        jsonObj.put("CallBackUrl", callBackURL);
+	        jsonObj.put("CustomerReferenceID", uuid);
+	        
+	        JSONArray consentForDataSources = new JSONArray();
+	        consentForDataSources.put("Birth Registry");
+	        consentForDataSources.put("Visa Verification");
+	        consentForDataSources.put("DVS ImmiCard Search");
+	        consentForDataSources.put("DVS Citizenship Certificate Search");
+	        consentForDataSources.put("Credit Agency");
+	        
+	        jsonObj.put("ConsentForDataSources", consentForDataSources);
+	        jsonObj.put("CountryCode", clientRequestJson.get("CountryCode"));
+	        jsonObj.put("DataFields", clientRequestJson.get("DataFields"));
+	        
+			Gson gson = new GsonBuilder().setPrettyPrinting().create(); 
+			VerifyRequest request = gson.fromJson(jsonObj.toString(), VerifyRequest.class);
+			 
+			//logger.info("\n---------------Verify KYC Service Request------------");
+			logger.info("{}",request);
+			/*
+			 * VerifyResult result = verificationClient.verify(request);
+			 * logger.info("\n---------------Verify KYC Service Response 2------------");
+			 * logger.info("{}",result);
+			 */
+			
+			//asyn call
+	        verificationClient.verifyAsync(request, new ApiCallback<VerifyResult>() {
+	        	@Override
+	           public void onFailure(ApiException e, int statusCode, Map<String, List<String>> responseHeaders) {
+	        	   Logger.getLogger(KYCController.class.getName()).log(Level.SEVERE, null, e);
+	           }
+	           @Override
+	           public void onSuccess(VerifyResult response, int statusCode, Map<String, List<String>> responseHeaders) {
+	                logger.info("\n--------------- onSuccess Verify KYC Service Response------------");
+	        		logger.info("{}",response);
+	        		
+	        		ArrayList<String> list = new ArrayList<String>();
+	        		list.add(request.getDataFields().getCommunication().getEmailAddress());
+	        		list.add(response.getTransactionID());
+	        		list.add(response.getCustomerReferenceID());  
+	        		list.add(response.getRecord().getTransactionRecordID());
+	        		try {
+						sheetsService.addRow(list);
+					} catch (IOException | GeneralSecurityException e) {
+						e.printStackTrace();
+					}
+	           }
+	           @Override
+	           public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
+	        	   logger.info("\n--------------- Testing 2 ------------");
+	        	   logger.info("{} {} {}",bytesWritten,contentLength,done);
+	           }
+	           @Override
+	           public void onDownloadProgress(long bytesRead, long contentLength, boolean done) {
+	        	   logger.info("\n--------------- Testing 3 ------------");
+	           }
+	       });
+		}catch( ApiException ex) {
+			logger.error("Error occured: {}", ex);
+		}
        return response.getStatus();
 	}	
 	
-	public String kycResponse(String response) { // get asyn call response POC
-		System.out.println("************"+response);
-		return response;
-	}
 	
 	//Common method
 	public static Map<String, String> sortByValue(Map<String, String> hm) {
@@ -406,8 +361,8 @@ public class KYCController {
 	}
 	
 	@CrossOrigin
-	@GetMapping("/getEmbedIdToken")
-	public String getEmbedIdToken() {
+	@PostMapping("/trulioo-api/embedids/tokens/{publicKey}")
+	public String getEmbedIdToken(@PathVariable  String publicKey) {
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
 		headers.add("cache-control", "no-cache");
@@ -415,7 +370,7 @@ public class KYCController {
 		headers.add("x-trulioo-api-key", truliooEmbedIdKeyBe);
 		
 		Map<String, Object> map = new HashMap<>();
-		map.put("publicKey", truliooEmbedIdKeyFe);
+		map.put("publicKey", publicKey);
 		
 		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(map, headers);
 		ResponseEntity<String> response = restTemplate.exchange(truliooEmbedIdTokenUri, HttpMethod.POST, entity, String.class);
@@ -443,9 +398,18 @@ public class KYCController {
 	 */
 	
 	@CrossOrigin
-	@GetMapping("/googleSheetReadValue")
-	public String googleSheetReadValue() throws GeneralSecurityException, IOException {
-		sheetsService.getSpreadsheetValues();
+	@GetMapping("/getTransactionUpdate/{transactionID}")
+	public String googleSheetReadValue(@PathVariable  String transactionID) throws GeneralSecurityException, IOException, ApiException {
+
+		ApiClient apiClient = new ApiClient();
+		apiClient.setUsername(truliooUsername);
+		apiClient.setPassword(truliooPassword);
+		VerificationsApi verificationClient = new VerificationsApi(apiClient);
+		TransactionStatus ts = verificationClient.getTransactionStatus(transactionID);
+		
+		TransactionRecordResult recordResult = verificationClient.getTransactionRecord(ts.getTransactionRecordId());
+		logger.info("{}",recordResult);
+	
 		return "Done";
 	}
 	
