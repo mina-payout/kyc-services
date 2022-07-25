@@ -26,16 +26,22 @@ import com.google.api.services.sheets.v4.model.ValueRange;
 import ch.qos.logback.core.subst.Token;
 
 public class GoogleSheetAuthorizationConfig {
-		private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
-	    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-	    private static final String TOKENS_DIRECTORY_PATH = "tokens";
+	/*
+	 * private static final String APPLICATION_NAME =
+	 * "Google Sheets API Java Quickstart"; private static final JsonFactory
+	 * JSON_FACTORY = GsonFactory.getDefaultInstance(); private static final String
+	 * TOKENS_DIRECTORY_PATH = "tokens";
+	 */
 
 	    /**
 	     * Global instance of the scopes required by this quickstart.
 	     * If modifying these scopes, delete your previously saved tokens/ folder.
 	     */
-	    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS_READONLY);
-	    private static final String CREDENTIALS_FILE_PATH = "/googleSheetCredentials.json";
+		/*
+		 * private static final List<String> SCOPES =
+		 * Collections.singletonList(SheetsScopes.SPREADSHEETS_READONLY); private static
+		 * final String CREDENTIALS_FILE_PATH = "/googleSheetCredentials.json";
+		 */
 	    
 	    /**
 	     * Creates an authorized Credential object.
@@ -43,23 +49,23 @@ public class GoogleSheetAuthorizationConfig {
 	     * @return An authorized Credential object.
 	     * @throws IOException If the credentials.json file cannot be found.
 	     */
-	   private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-	        // Load client secrets.
-	        InputStream in = GoogleSheetAuthorizationConfig.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-	        if (in == null) {
-	            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
-	        }
-	        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-	        // Build flow and trigger user authorization request.
-	        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-	                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-	                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-	                .setAccessType("offline")
-	                .build();
-	        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(5000).build();
-	        return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-	    }
+		/*
+		 * private static Credential getCredentials(final NetHttpTransport
+		 * HTTP_TRANSPORT) throws IOException { // Load client secrets. InputStream in =
+		 * GoogleSheetAuthorizationConfig.class.getResourceAsStream(
+		 * CREDENTIALS_FILE_PATH); if (in == null) { throw new
+		 * FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH); }
+		 * GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY,
+		 * new InputStreamReader(in));
+		 * 
+		 * // Build flow and trigger user authorization request.
+		 * GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+		 * HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES) .setDataStoreFactory(new
+		 * FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+		 * .setAccessType("offline") .build(); LocalServerReceiver receiver = new
+		 * LocalServerReceiver.Builder().setPort(5000).build(); return new
+		 * AuthorizationCodeInstalledApp(flow, receiver).authorize("user"); }
+		 */
 	    
 	    /**
 	     * Prints the names and majors of students in a sample spreadsheet:

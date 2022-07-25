@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -34,7 +35,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
@@ -75,8 +78,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.minanet.trulioo.core.domain.TruliooResponse;
+import com.minanet.trulioo.kyc.config.GoogleAuthorizationConfig;
 import com.minanet.trulioo.kyc.config.GoogleSheetAuthorizationConfig;
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
+import com.minanet.trulioo.kyc.service.GoogleSheetsService;
 import com.trulioo.normalizedapi.ApiCallback;
 import com.trulioo.normalizedapi.ApiClient;
 import com.trulioo.normalizedapi.ApiException;
@@ -95,24 +100,30 @@ public class KYCController {
 	
 	public static final org.slf4j.Logger logger =LoggerFactory.getLogger(KYCController.class);
 
-	private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
-    private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-    private static final String TOKENS_DIRECTORY_PATH = "resources";
+	/*
+	 * private static final String APPLICATION_NAME =
+	 * "Google Sheets API Java Quickstart"; private static final JsonFactory
+	 * JSON_FACTORY = GsonFactory.getDefaultInstance(); private static final String
+	 * TOKENS_DIRECTORY_PATH = "resources";
+	 */
 
 
-    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE_FILE);
-    private static final String CREDENTIALS_FILE_PATH = "/googleSheetCredentials.json";
+   // private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE_FILE);
+  //  private static final String CREDENTIALS_FILE_PATH = "/googleSheetCredentials.json";
 
-   // private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE);
-   // private static final String CREDENTIALS_FILE_PATH = "resources/googleSheetCredentials.json";
+  //  private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE);
+  //  private static final String CREDENTIALS_FILE_PATH = "resources/googleSheetCredentials.json";
 
-    
+	/*
+	 * @Autowired private GoogleAuthorizationConfig googleAuthorizationConfig;
+	 */
+ 
 	
 	@Autowired
 	RestTemplate restTemplate;
 	
 	@Autowired
-	//GoogleSheetsService sheetsService;
+	GoogleSheetsService sheetsService;
 	
 	@Value("${trulioo.apiclient.username}")
 	public String truliooUsername;
@@ -129,10 +140,13 @@ public class KYCController {
 	@Value("${trulioo.embedid.key.api}")
 	public String truliooEmbedIdKeyBe;
 	
-	@Value("${credentials.file.path}")
-    private String credentialsFilePath;
-    @Value("${tokens.directory.path}")
-    private String tokensDirectoryPath;
+	/*
+	 * @Value("${credentials.file.path}") private String credentialsFilePath;
+	 */
+	
+	/*
+	 * @Value("${tokens.directory.path}") private String tokensDirectoryPath;
+	 */
 	
 	VerifyResult response;
 	
@@ -251,10 +265,17 @@ public class KYCController {
         String clientRequest = httpRequest.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
         JSONObject clientRequestJson = new JSONObject(clientRequest); 
         
+        
+        UUID uuid = UUID.randomUUID();
+        
+        //String callBackURL = "http://localhost:5000/KYCService/verifyCallbackURL?uuid="+uuid;
+        String callBackURL = "http://minakycservicedev-env.eba-zmicm36h.us-east-1.elasticbeanstalk.com/KYCService/verifyCallbackURL?uuid="+uuid;
+        
         JSONObject jsonObj = new JSONObject();
         jsonObj.put("AcceptTruliooTermsAndConditions", "true");
         jsonObj.put("CleansedAddress", "false");
         jsonObj.put("ConfigurationName", "Identity Verification");
+        jsonObj.put("CallBackUrl", callBackURL);
         
         JSONArray consentForDataSources = new JSONArray();
         consentForDataSources.put("Birth Registry");
@@ -272,10 +293,15 @@ public class KYCController {
 		 
 		logger.info("\n---------------Verify KYC Service Request------------");
 		logger.info("{}",request);
+		/*
+		 * VerifyResult result = verificationClient.verify(request);
+		 * logger.info("\n---------------Verify KYC Service Response 2------------");
+		 * logger.info("{}",result);
+		 */
 		
 		//asyn call
         verificationClient.verifyAsync(request, new ApiCallback<VerifyResult>() {
-           @Override
+        	@Override
            public void onFailure(ApiException e, int statusCode, Map<String, List<String>> responseHeaders) {
         	   Logger.getLogger(KYCController.class.getName()).log(Level.SEVERE, null, e);
            }
@@ -283,15 +309,28 @@ public class KYCController {
            public void onSuccess(VerifyResult response, int statusCode, Map<String, List<String>> responseHeaders) {
                 logger.info("\n---------------Verify KYC Service Response------------");
         		logger.info("{}",response);
+        		
+        		ArrayList<String> list = new ArrayList<String>();
+        		list.add(response.getCountryCode());
+        		list.add(response.getTransactionID());
+        		list.add(response.getUploadedDt().toString());  
+        		
+        		try {
+					sheetsService.addRow(list);
+				} catch (IOException | GeneralSecurityException e) {
+					e.printStackTrace();
+				}
+        		
         		kycResponse(response.toString());
            }
            @Override
            public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
-        	   
+        	   logger.info("\n--------------- Testing 2 ------------");
+        	   logger.info("{} {} {}",bytesWritten,contentLength,done);
            }
            @Override
            public void onDownloadProgress(long bytesRead, long contentLength, boolean done) {
-        	   
+        	   logger.info("\n--------------- Testing 3 ------------");
            }
        });
        
@@ -336,7 +375,6 @@ public class KYCController {
 			} catch (Exception e) {
 				return truliooResponse;
 			}
-            
         }
 		 
 		ApiClient apiClient = new ApiClient();
@@ -345,6 +383,7 @@ public class KYCController {
 		ConfigurationApi configurationClient = new ConfigurationApi(apiClient);
 		try {
 			ApiResponse<Object> response = configurationClient.getRecommendedFieldsWithHttpInfo(countryCode, "Identity Verification");
+			
 			logger.info("\n---------------Recommended Fields Response------------");
 			logger.info("{}",response.getData());
 			System.out.println("getHeaders"+response.getHeaders());
@@ -385,144 +424,72 @@ public class KYCController {
 	}
 	
 	//google sheet POC common method
-	private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-        // Load client secrets.
-        InputStream in = GoogleSheetAuthorizationConfig.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
-        if (in == null) {
-            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
-        }
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        // Build flow and trigger user authorization request.
-        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
-                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-                .setAccessType("offline")
-                .build();
-        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-        return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-    }
-    
+	/*
+	 * private static Credential getCredentials(final NetHttpTransport
+	 * HTTP_TRANSPORT) throws IOException { // Load client secrets. InputStream in =
+	 * GoogleSheetAuthorizationConfig.class.getResourceAsStream(
+	 * CREDENTIALS_FILE_PATH); if (in == null) { throw new
+	 * FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH); }
+	 * GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY,
+	 * new InputStreamReader(in));
+	 * 
+	 * // Build flow and trigger user authorization request.
+	 * GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+	 * HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES) .setDataStoreFactory(new
+	 * FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+	 * .setAccessType("offline") .build(); LocalServerReceiver receiver = new
+	 * LocalServerReceiver.Builder().setPort(8888).build(); return new
+	 * AuthorizationCodeInstalledApp(flow, receiver).authorize("user"); }
+	 */
+	
 	@CrossOrigin
-	@GetMapping("/googleSheetPOC2")
-	public String googleSheetPOC2() throws GeneralSecurityException, IOException {
-		//sheetsService.appendRow();
+	@GetMapping("/googleSheetReadValue")
+	public String googleSheetReadValue() throws GeneralSecurityException, IOException {
+		sheetsService.getSpreadsheetValues();
 		return "Done";
 	}
 	
-	
-	
 	@CrossOrigin
-	@GetMapping("/googleSheetPOC")
-	public String googleSheetPOC() throws GeneralSecurityException, IOException {
-		 final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-	     final String spreadsheetId = "1TUWlGlZStYoIYzK0--5zj0dArRt4Fo5eVwPuLCoVXIY";
-	     final String range = "A2:B5";
-	     Sheets service = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-	             .setApplicationName(APPLICATION_NAME)
-	             .build();
-	     ValueRange response = service.spreadsheets().values()
-	             .get(spreadsheetId, range)
-	             .execute();
-	     List<List<Object>> values = response.getValues();
-	     if (values == null || values.isEmpty()) {
-	         System.out.println("No data found.");
-	     } else {
-	         System.out.println("Name, Major");
-	         for (List row : values) {
-	             // Print columns A and E, which correspond to indices 0 and 4.
-	             System.out.printf("%s, %s\n", row.get(0), row.get(1));
-	         }
-	     }
-	
-			/*
-			 * List<ValueRange> data = new ArrayList<>(); data.add(new ValueRange()
-			 * .setRange(range) .setValues(values));
-			 * 
-			 * BatchUpdateValuesResponse result = null; BatchUpdateValuesRequest body = new
-			 * BatchUpdateValuesRequest() .setValueInputOption("Trulioo Updated data")
-			 * .setData(data); result =
-			 * service.spreadsheets().values().batchUpdate(spreadsheetId, body).execute();
-			 * System.out.printf("%d cells updated.", result.getTotalUpdatedCells());
-			 */
-	        
-	     
+	@GetMapping("/googleSheetReadSpecificRange")
+	public String googleSheetReadSpecificRange() throws GeneralSecurityException, IOException {
+		 sheetsService.getSpreadsheetValuesForSpecificRange();
 		return "Done"; 
 	}
 	
 	@CrossOrigin
-	@GetMapping("/googleSheetWritePOC")
-	public String appendValues() throws IOException, GeneralSecurityException {
-		final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-		String spreadsheetId = "1U0OJz58tbLgpt7O-642iunG9Cpz5yr7tUP_fL304ZUc";
-		String range = "A1:C2";
-		String valueInputOption = "USER_ENTERED";
+	@GetMapping("/googleSheetAppendValue")
+	public String googleSheetAppendValue() throws GeneralSecurityException, IOException {
+		//sheetsService.appendRow();
+		ArrayList<String> list = new ArrayList<String>();
+		String s1 ="Test1";
+		String s2 ="Test2";
+		String s3 ="Test3";
+		list.add(s1);
+		list.add(s2);
+		list.add(s3);  
 		
-		 List<Object> ls=new ArrayList<>();
-	        ls.add(1);
-	        ls.add(2);
-	        List<Object> ls1=new ArrayList<>();
-	        ls1.add(3);
-	        ls1.add(4);
-	        List<List<Object>> ls2=new ArrayList<>();
-	        ls2.add(ls);
-	        ls2.add(ls1);
-		
-	/*	GoogleCredentials credentials = GoogleCredentials.getApplicationDefault()
-				.createScoped(Collections.singleton(SheetsScopes.SPREADSHEETS));
-		HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(credentials);
-
-		Sheets service = new Sheets.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance(),
-				requestInitializer).setApplicationName("Sheets samples").build();
-*/
-		UpdateValuesResponse result = null;
-		
-			
-		/*
-		 * Sheets service2 = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY,
-		 * getCredentials(HTTP_TRANSPORT)) .setApplicationName(APPLICATION_NAME)
-		 * .build();
-		 */
-		/* ValueRange response = service2.spreadsheets().values()
-	             .get(spreadsheetId, range)
-	             .execute();
-		 
-			ValueRange body = new ValueRange().setValues(ls2);
-			result = service2.spreadsheets().values().update(spreadsheetId, range, body)
-					.setValueInputOption(valueInputOption).execute();
-			
-			System.out.printf("%d cells appended.", result.getUpdatedColumns());
-		*/
-		ValueRange requestBody2 = new ValueRange();
-		
-		Sheets sheetsService = createSheetsService();
-	    Sheets.Spreadsheets.Values.Update request =
-	        sheetsService.spreadsheets().values().update(spreadsheetId, range, requestBody2);
-	    request.setValueInputOption(valueInputOption);
-
-	    UpdateValuesResponse response = request.execute();
-
-	    // TODO: Change code below to process the `response` object:
-	    System.out.println(response);
+		sheetsService.addRow(list);
 		return "Done";
 	}
 	
-	 public static Sheets createSheetsService() throws IOException, GeneralSecurityException {
-		    HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-		    JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-
-		    // TODO: Change placeholder below to generate authentication credentials. See
-		    // https://developers.google.com/sheets/quickstart/java#step_3_set_up_the_sample
-		    //
-		    // Authorize using one of the following scopes:
-		    //   "https://www.googleapis.com/auth/drive"
-		    //   "https://www.googleapis.com/auth/drive.file"
-		    //   "https://www.googleapis.com/auth/spreadsheets"
-		    GoogleCredential credential = null;
-
-		    return new Sheets.Builder(httpTransport, jsonFactory, credential)
-		        .setApplicationName("Google-SheetsSample/0.1")
-		        .build();
-		  }  
+	@CrossOrigin
+	@GetMapping("/googleSheetUpdate")
+	public String googleSheetUpdate() throws GeneralSecurityException, IOException {
+		 sheetsService.updateValue();
+		return "Done"; 
+	}
 	
+	@CrossOrigin	
+	@PostMapping("/verifyCallbackURL")
+	public Integer verifyCallbackURL(@RequestParam("uuid") String uuid, final HttpServletRequest httpRequest, HttpServletResponse response
+			) throws IOException, ApiException {
+		
+		logger.info("\n---------------Verify Callback KYC Service Request------------");
+		logger.info("{}",uuid);
+		
+		logger.info("\n---------------Verify Callback KYC Service Response------------");
+		logger.info("{}",response);	
+		
+       return response.getStatus();
+	}	
 }
