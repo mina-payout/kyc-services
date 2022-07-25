@@ -44,6 +44,7 @@ import com.google.gson.JsonObject;
 import com.minanet.trulioo.core.domain.TruliooResponse;
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
 import com.minanet.trulioo.kyc.service.GoogleSheetsService;
+import com.minanet.trulioo.tools.DateTimeFormatter;
 import com.trulioo.normalizedapi.ApiCallback;
 import com.trulioo.normalizedapi.ApiClient;
 import com.trulioo.normalizedapi.ApiException;
@@ -270,10 +271,18 @@ public class KYCController {
 	        		logger.info("{}",response);
 	        		
 	        		ArrayList<String> list = new ArrayList<String>();
+	        		list.add(DateTimeFormatter.getCurrentDateTime());
 	        		list.add(request.getDataFields().getCommunication().getEmailAddress());
-	        		list.add(response.getTransactionID());
+	        		list.add("");
+	        		list.add("");
+	        		list.add("1");
+	        		list.add(request.getDataFields().getPersonInfo().getFirstGivenName());
+	        		list.add(request.getDataFields().getPersonInfo().getMiddleName());
+	        		list.add(request.getDataFields().getPersonInfo().getFirstSurName());
+	        		list.add(request.getCountryCode());
+	        		list.add("");
 	        		list.add(response.getCustomerReferenceID());  
-	        		list.add(response.getRecord().getTransactionRecordID());
+	        		list.add(response.getTransactionID());
 	        		try {
 						sheetsService.addRow(list);
 					} catch (IOException | GeneralSecurityException e) {
