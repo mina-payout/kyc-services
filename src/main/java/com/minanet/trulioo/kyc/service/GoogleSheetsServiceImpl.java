@@ -84,13 +84,8 @@ public class GoogleSheetsServiceImpl implements GoogleSheetsService {
     }
     
     
-    @Override
-    public void addRow(ArrayList<String> list) throws IOException, GeneralSecurityException {
+    public void addRow(ValueRange body) throws IOException, GeneralSecurityException {
     	Sheets sheetsService = googleAuthorizationConfig.getSheetsService();
-    	ValueRange body = new ValueRange()
-    		      .setValues(Arrays.asList(
-    		        Arrays.asList(list.toArray())
-    		        ));
     	AppendValuesResponse  result = sheetsService.spreadsheets().values()
     		    		.append(spreadsheetId, "A1", body)
     		    		  .setValueInputOption("USER_ENTERED")
@@ -100,7 +95,6 @@ public class GoogleSheetsServiceImpl implements GoogleSheetsService {
     	LOGGER.info("Appended: {}", result);
     }
     
-   
     @SuppressWarnings("rawtypes")
 	@Override
 	public void getSpreadsheetValuesForSpecificRange() throws IOException, GeneralSecurityException {

@@ -41,6 +41,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.minanet.trulioo.core.domain.IdentityVerificationResponsePojo;
 import com.minanet.trulioo.core.domain.TruliooResponse;
 import com.minanet.trulioo.kyc.enums.CountryCodesEnum;
 import com.minanet.trulioo.kyc.service.GoogleSheetsService;
@@ -62,25 +63,6 @@ public class KYCController {
 	
 	public static final org.slf4j.Logger logger =LoggerFactory.getLogger(KYCController.class);
 
-	/*
-	 * private static final String APPLICATION_NAME =
-	 * "Google Sheets API Java Quickstart"; private static final JsonFactory
-	 * JSON_FACTORY = GsonFactory.getDefaultInstance(); private static final String
-	 * TOKENS_DIRECTORY_PATH = "resources";
-	 */
-
-
-   // private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE_FILE);
-  //  private static final String CREDENTIALS_FILE_PATH = "/googleSheetCredentials.json";
-
-  //  private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.DRIVE);
-  //  private static final String CREDENTIALS_FILE_PATH = "resources/googleSheetCredentials.json";
-
-	/*
-	 * @Autowired private GoogleAuthorizationConfig googleAuthorizationConfig;
-	 */
- 
-	
 	@Autowired
 	RestTemplate restTemplate;
 	
@@ -101,14 +83,6 @@ public class KYCController {
 	
 	@Value("${trulioo.embedid.key.api}")
 	public String truliooEmbedIdKeyBe;
-	
-	/*
-	 * @Value("${credentials.file.path}") private String credentialsFilePath;
-	 */
-	
-	/*
-	 * @Value("${tokens.directory.path}") private String tokensDirectoryPath;
-	 */
 	
 	VerifyResult response;
 	
@@ -218,6 +192,8 @@ public class KYCController {
 	public Integer verifyKYCService(final HttpServletRequest httpRequest, HttpServletResponse response
 			) throws IOException, ApiException {
 		
+		IdentityVerificationResponsePojo verificationResponse = new IdentityVerificationResponsePojo();
+		
 		try {
 			ApiClient apiClient = new ApiClient();
 			apiClient.setUsername(truliooUsername);
@@ -251,13 +227,8 @@ public class KYCController {
 			Gson gson = new GsonBuilder().setPrettyPrinting().create(); 
 			VerifyRequest request = gson.fromJson(jsonObj.toString(), VerifyRequest.class);
 			 
-			//logger.info("\n---------------Verify KYC Service Request------------");
+			logger.info("\n---------------Verify KYC Service Request------------");
 			logger.info("{}",request);
-			/*
-			 * VerifyResult result = verificationClient.verify(request);
-			 * logger.info("\n---------------Verify KYC Service Response 2------------");
-			 * logger.info("{}",result);
-			 */
 			
 			//asyn call
 	        verificationClient.verifyAsync(request, new ApiCallback<VerifyResult>() {
@@ -270,37 +241,33 @@ public class KYCController {
 	                logger.info("\n--------------- onSuccess Verify KYC Service Response------------");
 	        		logger.info("{}",response);
 	        		
-	        		ArrayList<String> list = new ArrayList<String>();
-	        		list.add(DateTimeFormatter.getCurrentDateTime());
-	        		list.add(request.getDataFields().getCommunication().getEmailAddress());
-	        		list.add("");
-	        		list.add("");
-	        		list.add("1");
-	        		list.add(request.getDataFields().getPersonInfo().getFirstGivenName());
-	        		list.add(request.getDataFields().getPersonInfo().getMiddleName());
-	        		list.add(request.getDataFields().getPersonInfo().getFirstSurName());
-	        		list.add(request.getCountryCode());
-	        		list.add("");
-	        		list.add(response.getCustomerReferenceID());  
-	        		list.add(response.getTransactionID());
+	        		verificationResponse.setSubmissionDate(DateTimeFormatter.getCurrentDateTime());
+	        		verificationResponse.setEmail(request.getDataFields().getCommunication().getEmailAddress());
+	        		verificationResponse.setFirstName(request.getDataFields().getPersonInfo().getFirstGivenName());
+	        		verificationResponse.setMiddleName(request.getDataFields().getPersonInfo().getMiddleName());
+	        		verificationResponse.setLastName(request.getDataFields().getPersonInfo().getFirstSurName());
+	        		verificationResponse.setCountry(request.getCountryCode());
+	        		verificationResponse.setInternalTxnID(response.getCustomerReferenceID());
+	        		verificationResponse.setTruliooTxnIDV(response.getTransactionID());
+	        		verificationResponse.setNumberOfAttempts("1");
+	        		
 	        		try {
-						sheetsService.addRow(list);
+						sheetsService.addRow(verificationResponse.validateValueRange());
 					} catch (IOException | GeneralSecurityException e) {
 						e.printStackTrace();
 					}
 	           }
 	           @Override
 	           public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
-	        	   logger.info("\n--------------- Testing 2 ------------");
-	        	   logger.info("{} {} {}",bytesWritten,contentLength,done);
+	        	   
 	           }
 	           @Override
 	           public void onDownloadProgress(long bytesRead, long contentLength, boolean done) {
-	        	   logger.info("\n--------------- Testing 3 ------------");
+	        	   
 	           }
 	       });
 		}catch( ApiException ex) {
-			logger.error("Error occured: {}", ex);
+            logger.error("Error occured: {},{}, {}", ex.getCode(), ex.getResponseBody(),ex);
 		}
        return response.getStatus();
 	}	
@@ -387,25 +354,6 @@ public class KYCController {
 		return response.getBody();
 	}
 	
-	//google sheet POC common method
-	/*
-	 * private static Credential getCredentials(final NetHttpTransport
-	 * HTTP_TRANSPORT) throws IOException { // Load client secrets. InputStream in =
-	 * GoogleSheetAuthorizationConfig.class.getResourceAsStream(
-	 * CREDENTIALS_FILE_PATH); if (in == null) { throw new
-	 * FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH); }
-	 * GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY,
-	 * new InputStreamReader(in));
-	 * 
-	 * // Build flow and trigger user authorization request.
-	 * GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
-	 * HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES) .setDataStoreFactory(new
-	 * FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
-	 * .setAccessType("offline") .build(); LocalServerReceiver receiver = new
-	 * LocalServerReceiver.Builder().setPort(8888).build(); return new
-	 * AuthorizationCodeInstalledApp(flow, receiver).authorize("user"); }
-	 */
-	
 	@CrossOrigin
 	@GetMapping("/getTransactionUpdate/{transactionID}")
 	public String googleSheetReadValue(@PathVariable  String transactionID) throws GeneralSecurityException, IOException, ApiException {
@@ -427,22 +375,6 @@ public class KYCController {
 	public String googleSheetReadSpecificRange() throws GeneralSecurityException, IOException {
 		 sheetsService.getSpreadsheetValuesForSpecificRange();
 		return "Done"; 
-	}
-	
-	@CrossOrigin
-	@GetMapping("/googleSheetAppendValue")
-	public String googleSheetAppendValue() throws GeneralSecurityException, IOException {
-		//sheetsService.appendRow();
-		ArrayList<String> list = new ArrayList<String>();
-		String s1 ="Test1";
-		String s2 ="Test2";
-		String s3 ="Test3";
-		list.add(s1);
-		list.add(s2);
-		list.add(s3);  
-		
-		sheetsService.addRow(list);
-		return "Done";
 	}
 	
 	@CrossOrigin
