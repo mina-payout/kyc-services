@@ -8,7 +8,6 @@ import com.google.api.services.sheets.v4.model.Sheet;
 import com.google.api.services.sheets.v4.model.Spreadsheet;
 import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
 import com.google.api.services.sheets.v4.model.ValueRange;
-import com.google.common.collect.Table.Cell;
 import com.minanet.trulioo.kyc.config.GoogleAuthorizationConfig;
 
 import org.slf4j.Logger;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -84,7 +82,7 @@ public class GoogleSheetsServiceImpl implements GoogleSheetsService {
     }
     
     
-    public void addRow(ValueRange body) throws IOException, GeneralSecurityException {
+    public String addRow(ValueRange body) throws IOException, GeneralSecurityException {
     	Sheets sheetsService = googleAuthorizationConfig.getSheetsService();
     	AppendValuesResponse  result = sheetsService.spreadsheets().values()
     		    		.append(spreadsheetId, "A1", body)
@@ -92,7 +90,8 @@ public class GoogleSheetsServiceImpl implements GoogleSheetsService {
     		    		  .setInsertDataOption("INSERT_ROWS")
     		    		  .setIncludeValuesInResponse(true)
     		    		  .execute();
-    	LOGGER.info("Appended: {}", result);
+    	LOGGER.info("Appended: {}, {}", result, result.getUpdates().getUpdatedRange());
+    	return result.getUpdates().getUpdatedRange();
     }
     
     @SuppressWarnings("rawtypes")
@@ -116,15 +115,14 @@ public class GoogleSheetsServiceImpl implements GoogleSheetsService {
 
 	@Override
 	public void updateValue() throws IOException, GeneralSecurityException {
-		// TODO Auto-generated method stub
 		Sheets sheetsService = googleAuthorizationConfig.getSheetsService();
     	ValueRange body = new ValueRange()
     		      .setValues(Arrays.asList(
-    		        Arrays.asList("updated value","dasdas")));
+    		        Arrays.asList("","","","testdata1","testdata2","testdata3","testdata4")));
     	Sheets.Spreadsheets.Values.Update request =
-    	        sheetsService.spreadsheets().values().update(spreadsheetId, "B18", body);
+    	        sheetsService.spreadsheets().values().update(spreadsheetId, "KYCReport!N1552", body);
     	    request.setValueInputOption("USER_ENTERED");
-
+    	    //Arrays.asList("","devtest@gdctest.com","","","1","Susan2","Henry","Rowe","CA","","85674922-6345-411b-895d-dd10f62c087b","fe236435-0013-4669-adac-66c4c5b83a15","","","","testdata1","testdata2","testdata3","testdata4")));
     	    UpdateValuesResponse response = request.execute();
     	LOGGER.info("Updated: {}", response);
 	}

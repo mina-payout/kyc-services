@@ -2,11 +2,10 @@ package com.minanet.trulioo.core.domain;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import com.google.api.services.sheets.v4.model.ValueRange;
 
-public class IdentityVerificationResponsePojo {
+public class IdentityVerificationResponse {
 	private String submissionDate;
 	private String email;
 	private String delegationAddress;
