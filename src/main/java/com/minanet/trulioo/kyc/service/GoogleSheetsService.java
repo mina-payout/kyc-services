@@ -10,4 +10,5 @@ public interface GoogleSheetsService {
     void getSpreadsheetValuesForSpecificRange() throws IOException, GeneralSecurityException;
     String addRow(ValueRange body) throws IOException, GeneralSecurityException;
     void updateValue() throws IOException, GeneralSecurityException;
+   // void searchValue() throws IOException, GeneralSecurityException;
 }

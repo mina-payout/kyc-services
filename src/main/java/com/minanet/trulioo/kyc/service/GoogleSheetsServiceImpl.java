@@ -126,4 +126,11 @@ public class GoogleSheetsServiceImpl implements GoogleSheetsService {
     	    UpdateValuesResponse response = request.execute();
     	LOGGER.info("Updated: {}", response);
 	}
+
+	/*
+	 * @Override public void searchValue() throws IOException,
+	 * GeneralSecurityException { Sheets service =
+	 * googleAuthorizationConfig.getSheetsService(); ValueRange response =
+	 * service.spreadsheets().values() .get(spreadsheetId, "A16:B16") .execute(); }
+	 */
 }

@@ -154,6 +154,14 @@ public class KYCController {
 		return "Done"; 
 	}
 	
+	/*
+	 * @CrossOrigin
+	 * 
+	 * @GetMapping("/searchValuePOC") public String searchValue() throws
+	 * IOException, GeneralSecurityException { sheetsService.searchValue(); return
+	 * "Done"; }
+	 */
+	
 	@CrossOrigin  
     @PostMapping("/verifyCallbackURL/{uuid}")
     public Integer verifyCallbackURL(@PathVariable("uuid") String uuid,
